@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "surblclient"
-version = "0.1.0"
+version = "0.2.0a1"
 description = "Client library for querying SURBL and other RBL blocklists."
 readme = "README.md"
 requires-python = ">=3.10"
