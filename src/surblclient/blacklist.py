@@ -23,9 +23,10 @@
 """Main class for the blacklists"""
 
 import socket
+from typing import Literal
 
 
-def is_ip_address(domain):
+def is_ip_address(domain) -> bool:
     """Return True if `domain` is an IP address"""
     return all(part.isdigit() for part in domain.split("."))
 
@@ -36,14 +37,16 @@ class Blacklist:
     domain = ""
     flags = []
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._cache = (None, None)
 
-    def get_base_domain(self, domain):
+    def get_base_domain(self, domain: str) -> str:
         """Return the base domain to use for RBL lookup"""
         return domain
 
-    def _lookup_exact(self, domain):
+    def _lookup_exact(
+        self, domain: str
+    ) -> tuple[str, list[str]] | Literal[False] | None:
         """Like 'lookup', but checks the exact domain name given.
         Not for direct use.
         """
@@ -74,7 +77,7 @@ class Blacklist:
             return (domain, [s for (n, s) in self.flags if flags & n])
         return False
 
-    def lookup(self, domain):
+    def lookup(self, domain: str) -> tuple[str, list[str]] | Literal[False] | None:
         """Extract base domain and check it against SURBL.
         Return (basedomain, lists) tuple, where basedomain is the
         base domain and lists is a list of strings indicating which
@@ -94,7 +97,7 @@ class Blacklist:
             domain = self.get_base_domain(domain)
         return self._lookup_exact(domain)
 
-    def __contains__(self, domain):
+    def __contains__(self, domain: str) -> bool:
         """Return True if base domain is listed in this blacklist;
         False otherwise.
         """

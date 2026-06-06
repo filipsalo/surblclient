@@ -1,29 +1,25 @@
-[tool.poetry]
+[build-system]
+requires = ["uv_build>=0.9,<0.10"]
+build-backend = "uv_build"
+
+[project]
 name = "surblclient"
 version = "0.1.0"
-description = "Client library for querying SURBL and other RBL blocklists"
-authors = ["Filip Salomonsson <filip.salomonsson@gmail.com>"]
-license = "MIT"
+description = "Client library for querying SURBL and other RBL blocklists."
 readme = "README.md"
-repository = "http://github.com/filipsalomonsson/surblclient"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Filip Salo", email = "filip@infix.se" }]
+keywords = ["surbl", "uribl", "rbl", "blocklist", "blacklist", "dns", "spam"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications :: Email :: Filters",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 
-[tool.poetry.dependencies]
-python = "^3.7.2"
-
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.2.0"
-pytest-cov = "^4.0.0"
-
-
-[tool.poetry.group.dev.dependencies]
-pylint = "^2.15.5"
-black = "^22.10.0"
-isort = "^5.10.1"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.isort]
-profile = "black"
+[project.urls]
+Homepage = "https://codeberg.org/filipsalo/surblclient"
+Repository = "https://codeberg.org/filipsalo/surblclient"

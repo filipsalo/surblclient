@@ -23,21 +23,21 @@
 
 from unittest import TestCase, mock
 
-from surblclient import surbl  # , uribl, spamhausdbl
+from surblclient import surbl, uribl  # , spamhausdbl
 
 
 class TestSurblclientTestCase(TestCase):
     """General tests for the surbl blocklist"""
 
     def test_surbl_pass(self):
-        """Domains that are not listed"""
+        """Domains that are not listed in SURBL"""
         domains = ["google.com", "yahoo.com", "apple.com"]
         for domain in domains:
             self.assertNotIn(domain, surbl)
             self.assertFalse(surbl.lookup(domain))
 
     def test_surbl_test_points(self):
-        """Known listed test domains"""
+        """Known listed SURBL test domains"""
         lists = ["ph", "mw", "abuse", "cr"]
         self.assertIn("test.surbl.org", surbl)
         self.assertEqual(
@@ -75,15 +75,25 @@ class TestSurblclientTestCase(TestCase):
             result = surbl.lookup("somedomain.tld")
         self.assertIsNone(result)
 
-    # def test_uribl_pass(self):
-    #     domains = ("google.com", "yahoo.com", "apple.com")
-    #     for domain in domains:
-    #         self.assertFalse(domain in uribl)
-    #         self.assertFalse(uribl.lookup(domain))
+    def test_uribl_pass(self):
+        """Domains that are not listed in URIBL"""
+        domains = ("google.com", "yahoo.com", "apple.com", "domain.tld")
+        for domain in domains:
+            self.assertFalse(domain in uribl)
+            self.assertFalse(uribl.lookup(domain))
 
-    # def test_uribl_test_points(self):
-    #     self.assertTrue("test.uribl.com" in uribl)
-    #     self.assertTrue("foo.bar.baz.test.uribl.com" in uribl)
+    def test_uribl_test_points(self):
+        """Known listed URIBL test domains"""
+        self.assertTrue("test.uribl.com" in uribl)
+        self.assertTrue("foo.bar.baz.test.uribl.com" in uribl)
+
+    def test_uribl_domain_is_ip(self):
+        """IP address lookup"""
+        self.assertTrue("127.0.0.2" in uribl)
+        result = uribl.lookup("127.0.0.2")
+        self.assertEqual(result[0], "127.0.0.2")
+        self.assertEqual(result[1], ["black", "grey", "red"])
+        self.assertIs(uribl.lookup("127.0.0.1"), False)
 
     # def test_spamhaus_pass(self):
     #     domains = ("google.com", "yahoo.com", "apple.com")

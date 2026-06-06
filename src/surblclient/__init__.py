@@ -1,5 +1,19 @@
 #!/usr/bin/env python
-#
+"""SURBL checker (http://www.surbl.org/)
+
+Example usage:
+>>> from surblclient import surbl
+>>> domain = "foo.bar.test.surbl.org"
+>>> domain in surbl
+True
+>>> surbl.lookup(domain)
+('test.surbl.org', ['ph', 'mw', 'abuse', 'cr'])
+>>> if domain in surbl:
+...     print "%s blacklisted in %s" % surbl.lookup(domain)
+...
+test.surbl.org blacklisted in ['ph', 'mw', 'abuse', 'cr']
+"""
+
 # Copyright (c) 2022 Filip Salomonsson
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,37 +34,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-"""SURBL multi blocklist"""
-from __future__ import print_function
+from .blacklist import Blacklist  # noqa: F401
+from .surbl import SURBL
+from .uribl import URIBL
 
-import importlib.resources
+# from .spamhausdbl import SpamhausDBLBlacklist
 
-from .blacklist import Blacklist
+VERSION = "0.1"
 
-_test_domains = {"surbl.org", "multi.surbl.org"}
-
-
-def domains_from_resource(filename):
-    """Return the domains listen in a data resource file"""
-    return set(importlib.resources.read_text(__package__, filename).split())
-
-
-class SURBL(Blacklist):
-    """Client for the multi.surbl.org"""
-
-    domain = "multi.surbl.org."
-    flags = [(8, "ph"), (16, "mw"), (64, "abuse"), (128, "cr")]
-
-    _pseudo_tlds = (
-        domains_from_resource("surbl-two-level-tlds")
-        | domains_from_resource("surbl-three-level-tlds")
-        | _test_domains
-    )
-
-    def get_base_domain(self, domain):
-        while domain.count(".") > 1:
-            _, _, rest = domain.partition(".")
-            if rest in self._pseudo_tlds:
-                return domain
-            domain = rest
-        return domain
+surbl = SURBL()
+uribl = URIBL()
+# spamhausdbl = Blacklist("dbl.spamhaus.org")

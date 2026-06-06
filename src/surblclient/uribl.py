@@ -1,20 +1,6 @@
 #!/usr/bin/env python
-"""SURBL checker (http://www.surbl.org/)
-
-Example usage:
->>> from surblclient import surbl
->>> domain = "foo.bar.test.surbl.org"
->>> domain in surbl
-True
->>> surbl.lookup(domain)
-('test.surbl.org', ['ph', 'mw', 'abuse', 'cr'])
->>> if domain in surbl:
-...     print "%s blacklisted in %s" % surbl.lookup(domain)
-...
-test.surbl.org blacklisted in ['ph', 'mw', 'abuse', 'cr']
-"""
-
-# Copyright (c) 2022 Filip Salomonsson
+#
+# Copyright (c) 2023 Filip Salomonsson
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -34,14 +20,14 @@ test.surbl.org blacklisted in ['ph', 'mw', 'abuse', 'cr']
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from .blacklist import Blacklist  # noqa: F401
+"""URIBL multi blocklist"""
+
 from .surbl import SURBL
 
-# from .uribl import UriblBlacklist
-# from .spamhausdbl import SpamhausDBLBlacklist
 
-VERSION = "0.1"
+class URIBL(SURBL):
+    """Client for the multi.uribl.org blocklist"""
 
-surbl = SURBL()
-# uribl = Blacklist("multi.uribl.com")
-# spamhausdbl = Blacklist("dbl.spamhaus.org")
+    domain = "multi.uribl.com."
+    test_domains = {"multi.uribl.com", "uribl.com"}
+    flags = [(2, "black"), (4, "grey"), (8, "red")]
