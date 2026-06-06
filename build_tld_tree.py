@@ -2,7 +2,6 @@
 from __future__ import print_function
 
 import sys
-from collections import defaultdict
 
 tree = {}
 
@@ -23,7 +22,7 @@ def print_tree(tree, level=0):
         print(" " * level + key)
         print_tree(tree[key], level + 1)
 
+
 # import json
 # print(json.dumps(tree, indent=2))
 # print_tree(tree)
-
