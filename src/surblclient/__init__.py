@@ -14,7 +14,7 @@ True
 test.surbl.org blacklisted in ['ph', 'mw', 'abuse', 'cr']
 """
 
-# Copyright (c) 2022 Filip Salomonsson
+# Copyright (c) 2026 Filip Salo
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

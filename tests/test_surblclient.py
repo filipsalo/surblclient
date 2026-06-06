@@ -8,7 +8,7 @@ block public resolvers and rate-limit, so they make a poor test fixture; the
 real round-trip is covered separately in test_live.py (opt-in).
 """
 
-# Copyright (c) 2022 Filip Salomonsson
+# Copyright (c) 2026 Filip Salo
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
