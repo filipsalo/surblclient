@@ -10,6 +10,19 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run prek hooks
+        run: uvx prek run --all-files --show-diff-on-failure
+
   test:
     runs-on: docker
     strategy:
