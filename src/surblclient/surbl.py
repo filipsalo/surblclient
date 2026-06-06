@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 """SURBL multi blocklist"""
+
 import importlib.resources
 
 from .blacklist import Blacklist

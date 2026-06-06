@@ -1,0 +1,38 @@
+# Forgejo Actions — build and publish surblclient to PyPI on a version tag.
+#
+# Release flow:
+#   1. Bump `version` in pyproject.toml.
+#   2. git tag v<version> && git push origin v<version>
+#
+# Requirements:
+#   - A self-hosted Forgejo runner registered with the `docker` label.
+#   - A repository secret named PYPI_TOKEN containing a PyPI API token.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Test
+        run: uv run python -m unittest -v
+
+      - name: Build
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
