@@ -50,13 +50,17 @@ class Blacklist:
         """Like 'lookup', but checks the exact domain name given.
         Not for direct use.
         """
-        cached_domain, ip_address = self._cache
+        cached_domain, ip_addresses = self._cache
         if cached_domain != domain:
             try:
                 lookup_domain = domain
                 if is_ip_address(domain):
                     lookup_domain = ".".join(reversed(domain.split(".")))
-                ip_address = socket.gethostbyname(lookup_domain + "." + self.domain)
+                # An RBL may return several A records (e.g. one per list); read
+                # them all rather than just the first, which gethostbyname does.
+                _, _, ip_addresses = socket.gethostbyname_ex(
+                    lookup_domain + "." + self.domain
+                )
             except socket.gaierror as err:
                 if err.errno in (socket.EAI_NONAME, socket.EAI_NODATA):
                     # No record found
@@ -67,21 +71,24 @@ class Blacklist:
             except OSError:
                 # Not sure if this can happen. Timeouts?
                 return None
-            self._cache = (domain, ip_address)
-        if ip_address is None:
+            self._cache = (domain, ip_addresses)
+        if ip_addresses is None:
             return False
-        return self._decode(domain, ip_address)
+        return self._decode(domain, ip_addresses)
 
     def _decode(
-        self, domain: str, ip_address: str
+        self, domain: str, ip_addresses: list[str]
     ) -> tuple[str, list[str]] | Literal[False] | None:
-        """Interpret the 127.0.0.x answer for `domain`.
+        """Interpret the 127.0.0.x answer(s) for `domain`.
 
-        The default treats the last octet as a bitmask over `self.flags`, with
-        bit 0x1 meaning the query was refused (reported as unknown/None).
-        Subclasses whose service uses a different encoding override this.
+        The default OR-combines the last octet of every returned record into a
+        single bitmask over `self.flags`, with bit 0x1 meaning the query was
+        refused (reported as unknown/None). Subclasses whose service uses a
+        different encoding override this.
         """
-        flags = int(ip_address.split(".")[-1])
+        flags = 0
+        for ip_address in ip_addresses:
+            flags |= int(ip_address.split(".")[-1])
         if not flags:
             return False
         if flags & 1:

@@ -63,16 +63,25 @@ class SpamhausDBL(SURBL):
     flags: list[tuple[int, str]] = []
 
     def _decode(
-        self, domain: str, ip_address: str
+        self, domain: str, ip_addresses: list[str]
     ) -> tuple[str, list[str]] | Literal[False] | None:
-        octets = ip_address.split(".")
-        # Listings are 127.0.1.x. Anything else (the 127.255.255.x error range,
-        # or anything unexpected) means we couldn't get a real answer.
-        if octets[:3] != ["127", "0", "1"]:
-            return None
-        code = int(octets[3])
-        if 2 <= code <= 99:
-            return (domain, ["bad"])
-        if 102 <= code <= 199:
-            return (domain, ["abused-legit"])
-        return False
+        labels: list[str] = []
+        for ip_address in ip_addresses:
+            octets = ip_address.split(".")
+            # Listings are 127.0.1.x. Anything else (the 127.255.255.x error
+            # range, or anything unexpected) means we couldn't get a real
+            # answer for this query at all.
+            if octets[:3] != ["127", "0", "1"]:
+                return None
+            code = int(octets[3])
+            if 2 <= code <= 99:
+                label = "bad"
+            elif 102 <= code <= 199:
+                label = "abused-legit"
+            else:
+                continue
+            if label not in labels:
+                labels.append(label)
+        if not labels:
+            return False
+        return (domain, labels)

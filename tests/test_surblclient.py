@@ -37,18 +37,23 @@ from surblclient.uribl import URIBL
 
 
 def fake_resolver(responses):
-    """Return a `socket.gethostbyname` stand-in backed by a {query: ip} map.
+    """Return a `socket.gethostbyname_ex` stand-in backed by a {query: ips} map.
 
     `query` is the exact name the library looks up, i.e. the candidate domain
-    (or reversed IP) with the blocklist zone appended. Any name not in the map
-    raises gaierror(EAI_NONAME), exactly as a real "not listed" answer does.
+    (or reversed IP) with the blocklist zone appended. A value may be a single
+    IP string or a list of them (an RBL can return several A records). Any name
+    not in the map raises gaierror(EAI_NONAME), exactly as a real "not listed"
+    answer does.
     """
 
     def _resolve(name):
         try:
-            return responses[name]
+            ips = responses[name]
         except KeyError:
             raise socket.gaierror(socket.EAI_NONAME, "Name or service not known")
+        if isinstance(ips, str):
+            ips = [ips]
+        return (name, [], list(ips))
 
     return _resolve
 
@@ -66,7 +71,9 @@ class SurblDecodingTestCase(TestCase):
         self.surbl = SURBL()
 
     def lookup_with(self, responses, domain):
-        with mock.patch("socket.gethostbyname", side_effect=fake_resolver(responses)):
+        with mock.patch(
+            "socket.gethostbyname_ex", side_effect=fake_resolver(responses)
+        ):
             return self.surbl.lookup(domain), domain in self.surbl
 
     def test_listed_all_flags(self):
@@ -79,6 +86,12 @@ class SurblDecodingTestCase(TestCase):
     def test_listed_subset_flags(self):
         """Only the bits present are decoded (8 | 16 -> ph, mw)."""
         responses = {query(self.surbl, "test.surbl.org"): "127.0.0.24"}
+        result, _ = self.lookup_with(responses, "test.surbl.org")
+        self.assertEqual(result, ("test.surbl.org", ["ph", "mw"]))
+
+    def test_multiple_records_are_combined(self):
+        """Several A records are OR-combined, not just the first one read."""
+        responses = {query(self.surbl, "test.surbl.org"): ["127.0.0.8", "127.0.0.16"]}
         result, _ = self.lookup_with(responses, "test.surbl.org")
         self.assertEqual(result, ("test.surbl.org", ["ph", "mw"]))
 
@@ -127,7 +140,9 @@ class UriblDecodingTestCase(TestCase):
         self.uribl = URIBL()
 
     def lookup_with(self, responses, domain):
-        with mock.patch("socket.gethostbyname", side_effect=fake_resolver(responses)):
+        with mock.patch(
+            "socket.gethostbyname_ex", side_effect=fake_resolver(responses)
+        ):
             return self.uribl.lookup(domain), domain in self.uribl
 
     def test_listed_all_flags(self):
@@ -156,7 +171,9 @@ class SpamhausDBLDecodingTestCase(TestCase):
         self.dbl = SpamhausDBL()
 
     def lookup_with(self, responses, domain):
-        with mock.patch("socket.gethostbyname", side_effect=fake_resolver(responses)):
+        with mock.patch(
+            "socket.gethostbyname_ex", side_effect=fake_resolver(responses)
+        ):
             return self.dbl.lookup(domain), domain in self.dbl
 
     def test_listed_bad(self):
@@ -196,3 +213,9 @@ class SpamhausDBLDecodingTestCase(TestCase):
         responses = {query(self.dbl, "dbltest.com"): "127.0.1.2"}
         result, _ = self.lookup_with(responses, "foo.bar.baz.dbltest.com")
         self.assertEqual(result, ("dbltest.com", ["bad"]))
+
+    def test_multiple_records_union_labels(self):
+        """Several A records contribute a de-duplicated union of labels."""
+        responses = {query(self.dbl, "dbltest.com"): ["127.0.1.2", "127.0.1.102"]}
+        result, _ = self.lookup_with(responses, "dbltest.com")
+        self.assertEqual(result, ("dbltest.com", ["bad", "abused-legit"]))
