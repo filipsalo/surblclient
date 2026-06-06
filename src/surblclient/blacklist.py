@@ -50,32 +50,44 @@ class Blacklist:
         """Like 'lookup', but checks the exact domain name given.
         Not for direct use.
         """
-        cached_domain, flags = self._cache
+        cached_domain, ip_address = self._cache
         if cached_domain != domain:
             try:
                 lookup_domain = domain
                 if is_ip_address(domain):
                     lookup_domain = ".".join(reversed(domain.split(".")))
                 ip_address = socket.gethostbyname(lookup_domain + "." + self.domain)
-                flags = int(ip_address.split(".")[-1])
             except socket.gaierror as err:
                 if err.errno in (socket.EAI_NONAME, socket.EAI_NODATA):
                     # No record found
-                    flags = None
-                    self._cache = (domain, flags)
+                    self._cache = (domain, None)
                     return False
                 # Unhandled error, pass test for now
                 return None
             except OSError:
                 # Not sure if this can happen. Timeouts?
                 return None
-            self._cache = (domain, flags)
-        if flags:
-            if flags & 1:
-                # Blocked from making queries
-                return None
-            return (domain, [s for (n, s) in self.flags if flags & n])
-        return False
+            self._cache = (domain, ip_address)
+        if ip_address is None:
+            return False
+        return self._decode(domain, ip_address)
+
+    def _decode(
+        self, domain: str, ip_address: str
+    ) -> tuple[str, list[str]] | Literal[False] | None:
+        """Interpret the 127.0.0.x answer for `domain`.
+
+        The default treats the last octet as a bitmask over `self.flags`, with
+        bit 0x1 meaning the query was refused (reported as unknown/None).
+        Subclasses whose service uses a different encoding override this.
+        """
+        flags = int(ip_address.split(".")[-1])
+        if not flags:
+            return False
+        if flags & 1:
+            # Blocked from making queries
+            return None
+        return (domain, [s for (n, s) in self.flags if flags & n])
 
     def lookup(self, domain: str) -> tuple[str, list[str]] | Literal[False] | None:
         """Extract base domain and check it against SURBL.

@@ -35,13 +35,12 @@ test.surbl.org blacklisted in ['ph', 'mw', 'abuse', 'cr']
 # THE SOFTWARE.
 
 from .blacklist import Blacklist  # noqa: F401
+from .spamhausdbl import SpamhausDBL
 from .surbl import SURBL
 from .uribl import URIBL
-
-# from .spamhausdbl import SpamhausDBLBlacklist
 
 VERSION = "0.2.0a1"
 
 surbl = SURBL()
 uribl = URIBL()
-# spamhausdbl = Blacklist("dbl.spamhaus.org")
+spamhausdbl = SpamhausDBL()

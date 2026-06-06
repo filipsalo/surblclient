@@ -35,7 +35,7 @@ They are therefore skipped unless SURBL_LIVE_TESTS is set in the environment:
 import os
 from unittest import TestCase, skipUnless
 
-from surblclient import surbl, uribl
+from surblclient import spamhausdbl, surbl, uribl
 
 LIVE = skipUnless(
     os.environ.get("SURBL_LIVE_TESTS"),
@@ -99,3 +99,19 @@ class LiveUriblTestCase(TestCase):
         self.assertEqual(result[0], "127.0.0.2")
         self.assertEqual(result[1], ["black", "grey", "red"])
         self.assertIs(uribl.lookup("127.0.0.1"), False)
+
+
+@LIVE
+class LiveSpamhausDBLTestCase(TestCase):
+    """Real lookups against dbl.spamhaus.org."""
+
+    def test_dbl_pass(self):
+        """Domains that are not listed in the DBL"""
+        for domain in ("google.com", "yahoo.com", "apple.com"):
+            self.assertNotIn(domain, spamhausdbl)
+            self.assertFalse(spamhausdbl.lookup(domain))
+
+    def test_dbl_test_points(self):
+        """Known listed DBL test domain (and a subdomain of it)"""
+        self.assertIn("dbltest.com", spamhausdbl)
+        self.assertIn("foo.bar.baz.dbltest.com", spamhausdbl)

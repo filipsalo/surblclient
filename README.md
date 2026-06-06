@@ -41,13 +41,19 @@ It returns a `(base_domain, lists)` tuple on a hit, `False` when the domain is
 confirmed **not** listed, and `None` when the answer is **unknown** — a
 temporary DNS error, or the service refusing the query (see below).
 
-The same interface is available for URIBL:
+The same interface is available for URIBL and the Spamhaus DBL:
 
 ```python
->>> from surblclient import uribl
+>>> from surblclient import uribl, spamhausdbl
 >>> "test.uribl.com" in uribl
 True
+>>> spamhausdbl.lookup("dbltest.com")
+('dbltest.com', ['bad'])
 ```
+
+The DBL labels a hit as either `"bad"` (inherently bad / safe to block) or
+`"abused-legit"` (an otherwise-good domain seen in abuse — meant for scoring,
+not outright blocking), reflecting Spamhaus's two return-code ranges.
 
 Note that `in` can only return a bool, so it collapses the `None`
 (unknown/refused) case into `False`. If you need to distinguish "not listed"
@@ -65,10 +71,12 @@ else:
 
 ## Resolver requirements
 
-SURBL and URIBL **refuse queries that arrive via public/shared DNS resolvers**
-(Google Public DNS, OpenDNS, Cloudflare, and most ISP caching resolvers) and
-rate-limit heavy users. A refused query comes back as `127.0.0.1`, which this
-library reports as `None` (unknown) — so on a public resolver every lookup
+SURBL, URIBL, and the Spamhaus DBL all **refuse queries that arrive via
+public/shared DNS resolvers** (Google Public DNS, OpenDNS, Cloudflare, Quad9,
+and most ISP caching resolvers) and rate-limit heavy users. A refused query
+comes back as an error sentinel (`127.0.0.1` for SURBL/URIBL; `127.255.255.254`
+"public resolver" or `127.255.255.255` "excessive queries" for the DBL), which
+this library reports as `None` (unknown) — so on a public resolver every lookup
 silently returns "unknown" and the library can't do its job.
 
 This is the services' documented anti-abuse policy, not a bug in this library:
@@ -82,6 +90,10 @@ This is the services' documented anti-abuse policy, not a bug in this library:
   public nameservers, then it means your access is blocked … A good
   administrative solution is to run a local caching nameserver …"*
   ([surbl.org/faq/guidelines](https://www.surbl.org/faq/guidelines))
+- Spamhaus — public resolvers are blocked with return code `127.255.255.254`
+  ("Query via public/open resolver"); high-volume use needs the Data Query
+  Service (DQS) or rsync feed.
+  ([spamhaus.org/faqs/dnsbl-usage](https://www.spamhaus.org/faqs/dnsbl-usage/))
 
 To use this library reliably, run your **own recursive resolver** (e.g.
 [unbound](https://nlnetlabs.nl/projects/unbound/)) on the machine doing the

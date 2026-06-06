@@ -31,6 +31,7 @@ real round-trip is covered separately in test_live.py (opt-in).
 import socket
 from unittest import TestCase, mock
 
+from surblclient.spamhausdbl import SpamhausDBL
 from surblclient.surbl import SURBL
 from surblclient.uribl import URIBL
 
@@ -146,3 +147,52 @@ class UriblDecodingTestCase(TestCase):
         result, contained = self.lookup_with({}, "example.com")
         self.assertIs(result, False)
         self.assertFalse(contained)
+
+
+class SpamhausDBLDecodingTestCase(TestCase):
+    """Spamhaus DBL uses enumerated 127.0.1.x codes, not a bitmask."""
+
+    def setUp(self):
+        self.dbl = SpamhausDBL()
+
+    def lookup_with(self, responses, domain):
+        with mock.patch("socket.gethostbyname", side_effect=fake_resolver(responses)):
+            return self.dbl.lookup(domain), domain in self.dbl
+
+    def test_listed_bad(self):
+        """A code in 127.0.1.2-99 is an 'inherently bad' listing."""
+        responses = {query(self.dbl, "dbltest.com"): "127.0.1.2"}
+        result, contained = self.lookup_with(responses, "dbltest.com")
+        self.assertEqual(result, ("dbltest.com", ["bad"]))
+        self.assertTrue(contained)
+
+    def test_listed_abused_legit(self):
+        """A code in 127.0.1.102-199 is an 'abused-legit' listing."""
+        responses = {query(self.dbl, "dbltest.com"): "127.0.1.102"}
+        result, _ = self.lookup_with(responses, "dbltest.com")
+        self.assertEqual(result, ("dbltest.com", ["abused-legit"]))
+
+    def test_not_listed(self):
+        """NXDOMAIN means not listed."""
+        result, contained = self.lookup_with({}, "example.com")
+        self.assertIs(result, False)
+        self.assertFalse(contained)
+
+    def test_public_resolver_is_unknown(self):
+        """127.255.255.254 (public-resolver block) is unknown, not a hit."""
+        responses = {query(self.dbl, "example.com"): "127.255.255.254"}
+        result, contained = self.lookup_with(responses, "example.com")
+        self.assertIsNone(result)
+        self.assertFalse(contained)
+
+    def test_excessive_queries_is_unknown(self):
+        """127.255.255.255 (rate-limited) is unknown, not a hit."""
+        responses = {query(self.dbl, "example.com"): "127.255.255.255"}
+        result, _ = self.lookup_with(responses, "example.com")
+        self.assertIsNone(result)
+
+    def test_base_domain_reduction(self):
+        """A subdomain is reduced to its registered domain before lookup."""
+        responses = {query(self.dbl, "dbltest.com"): "127.0.1.2"}
+        result, _ = self.lookup_with(responses, "foo.bar.baz.dbltest.com")
+        self.assertEqual(result, ("dbltest.com", ["bad"]))
