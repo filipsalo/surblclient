@@ -1,3 +1,6 @@
+![PyPI - Version](https://img.shields.io/pypi/v/surblclient)
+![Test suite status](https://codeberg.org/filipsalo/surblclient/badges/workflows/test.yml/badge.svg)
+
 # surblclient
 
 A small client library for querying [SURBL](http://www.surbl.org/), URIBL,
