@@ -39,7 +39,7 @@ from .spamhausdbl import SpamhausDBL
 from .surbl import SURBL
 from .uribl import URIBL
 
-VERSION = "0.2.0a1"
+VERSION = "0.2.0a2"
 
 surbl = SURBL()
 uribl = URIBL()
