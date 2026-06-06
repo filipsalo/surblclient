@@ -1,0 +1,38 @@
+# This repository's canonical home is Codeberg; GitHub is a read-only mirror.
+#
+# GitHub has no native switch to disable pull requests, so this workflow
+# politely closes any PR opened here and points the author at Codeberg.
+#
+# It deliberately lives under .github/: it runs on GitHub (the mirror) and is
+# ignored by Codeberg's Forgejo runner, which uses .forgejo/ instead.
+
+name: close-pull-requests
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const url = "https://codeberg.org/filipsalo/surblclient";
+            const n = context.payload.pull_request.number;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: n,
+              body: `Thanks for the contribution! This GitHub repository is a read-only mirror — please open your pull request against the canonical repository on Codeberg: ${url}`,
+            });
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: n,
+              state: "closed",
+            });
