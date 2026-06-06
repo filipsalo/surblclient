@@ -65,6 +65,8 @@ class SpamhausDBL(SURBL):
     def _decode(
         self, domain: str, ip_addresses: list[str]
     ) -> tuple[str, list[str]] | Literal[False] | None:
+        # The DBL's codes are enumerated, so decode with value-range tests
+        # rather than a bitmask (both are sanctioned by RFC 5782 section 6).
         labels: list[str] = []
         for ip_address in ip_addresses:
             octets = ip_address.split(".")

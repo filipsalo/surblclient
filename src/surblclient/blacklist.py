@@ -81,10 +81,16 @@ class Blacklist:
     ) -> tuple[str, list[str]] | Literal[False] | None:
         """Interpret the 127.0.0.x answer(s) for `domain`.
 
+        A DNSxL may return one A record per sublist, and a client "MUST
+        interpret any returned A record as meaning that an address or domain is
+        listed" -- hence we consider every record, not just the first
+        (RFC 5782 sections 2.3 and 6).
+
         The default OR-combines the last octet of every returned record into a
-        single bitmask over `self.flags`, with bit 0x1 meaning the query was
-        refused (reported as unknown/None). Subclasses whose service uses a
-        different encoding override this.
+        single bitmask over `self.flags` (the "bit masks" approach of RFC 5782
+        section 6), with bit 0x1 meaning the query was refused (reported as
+        unknown/None). Subclasses whose service uses a different encoding
+        override this.
         """
         flags = 0
         for ip_address in ip_addresses:

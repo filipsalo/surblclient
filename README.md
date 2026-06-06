@@ -69,6 +69,11 @@ else:
     base, lists = result   # listed
 ```
 
+A single query can return several `127.0.0.x` records (one per sublist); per
+[RFC 5782](https://www.rfc-editor.org/rfc/rfc5782.html) §6 a client must treat
+*any* returned record as a listing, so this library reads them all and combines
+them (bit masks for SURBL/URIBL, value-range tests for the DBL — both per §6).
+
 ## Resolver requirements
 
 SURBL, URIBL, and the Spamhaus DBL all **refuse queries that arrive via
