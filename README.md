@@ -38,6 +38,9 @@ False
 ```python
 >>> surbl.lookup("foo.bar.baz.test.surbl.org")
 ('test.surbl.org', ['ph', 'mw', 'abuse', 'cr'])
+>>> base, lists = surbl.lookup("foo.bar.baz.test.surbl.org")
+>>> print(f"{base} blacklisted in {lists}")
+test.surbl.org blacklisted in ['ph', 'mw', 'abuse', 'cr']
 ```
 
 It returns a `(base_domain, lists)` tuple on a hit, `False` when the domain is

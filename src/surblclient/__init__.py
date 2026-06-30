@@ -9,7 +9,8 @@ True
 >>> surbl.lookup(domain)
 ('test.surbl.org', ['ph', 'mw', 'abuse', 'cr'])
 >>> if domain in surbl:
-...     print "%s blacklisted in %s" % surbl.lookup(domain)
+...     base, lists = surbl.lookup(domain)
+...     print(f"{base} blacklisted in {lists}")
 ...
 test.surbl.org blacklisted in ['ph', 'mw', 'abuse', 'cr']
 """
