@@ -61,6 +61,9 @@ class Blacklist:
                 _, _, ip_addresses = socket.gethostbyname_ex(
                     lookup_domain + "." + self.domain
                 )
+            # NOTE: False (not listed) and None (unknown) are both falsy but
+            # mean very different things -- None must never be treated as clean.
+            # Keep the two return paths distinct; don't collapse them.
             except socket.gaierror as err:
                 if err.errno in (socket.EAI_NONAME, socket.EAI_NODATA):
                     # No record found
@@ -103,12 +106,18 @@ class Blacklist:
         return (domain, [s for (n, s) in self.flags if flags & n])
 
     def lookup(self, domain: str) -> tuple[str, list[str]] | Literal[False] | None:
-        """Extract base domain and check it against SURBL.
-        Return (basedomain, lists) tuple, where basedomain is the
-        base domain and lists is a list of strings indicating which
-        blacklists the domain was found in.
-        If there was no match, return False.
-        If unsure (temporary error), return None.
+        """Extract the base domain and check it against this blacklist.
+
+        Returns one of three outcomes:
+          - ``(basedomain, lists)`` -- listed; ``lists`` names the sublists hit.
+          - ``False`` -- confirmed *not* listed.
+          - ``None`` -- unknown: a temporary DNS error, or the service refusing
+            the query (e.g. via a public resolver -- see the README).
+
+        WARNING: ``False`` and ``None`` are *both* falsy, so ``if not
+        lookup(...)`` lumps "unknown" together with "not listed". Unknown must
+        NOT be treated as clean, so test ``is None`` explicitly before any
+        truthiness check.
         """
         # Remove userinfo
         if "@" in domain:
